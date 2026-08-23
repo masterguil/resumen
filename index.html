@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <title>Sin Señal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -227,6 +228,69 @@
   .controls button:active,
   .controls button.pressed { background: var(--ink); color: var(--bg); }
   .controls button:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+
+  .toast {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 7px 10px;
+    background: var(--ink);
+    color: var(--bg);
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    text-align: center;
+    opacity: 0;
+    transition: opacity 200ms ease;
+    pointer-events: none;
+  }
+
+  .toast.show { opacity: 1; }
+
+  .unlock {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+    border: 1px solid var(--line);
+    padding: 12px 14px;
+  }
+
+  .unlock.visible { display: flex; }
+
+  .unlock-text {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .unlock-label {
+    font-family: 'Press Start 2P', 'Courier New', monospace;
+    font-size: 9px;
+    letter-spacing: 0.5px;
+    color: var(--ink-soft);
+  }
+
+  .unlock-title {
+    font-size: 12px;
+  }
+
+  .unlock-btn {
+    font-family: 'Space Mono', monospace;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    background: var(--ink);
+    color: var(--bg);
+    border: 1px solid var(--ink);
+    padding: 10px 14px;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .unlock-btn:hover { opacity: 0.85; }
+  .unlock-btn:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 </style>
 
 <div class="stage">
@@ -243,9 +307,11 @@
 
   <div class="frame" id="frame">
     <canvas id="board" role="img" aria-label="Tablero del juego: una serpiente corredora esquivando obstáculos"></canvas>
+    <div class="toast" id="toast" role="status">🔓 RESUMEN DESBLOQUEADO — DESCARGALO ABAJO</div>
     <div class="overlay visible" id="overlayStart">
       <div class="headline">SIN SEÑAL</div>
       <div class="sub">saltá o agachate para esquivar</div>
+      <div class="sub">llegá a 500 puntos y desbloqueás un archivo</div>
       <div class="prompt blink">PRESIONÁ ESPACIO PARA EMPEZAR</div>
     </div>
     <div class="overlay" id="overlayOver">
@@ -265,6 +331,14 @@
       <button id="btnDuck" data-action="duck" aria-label="Agachar">AGACHAR &#9660;</button>
       <button id="btnJump" data-action="jump" aria-label="Saltar">SALTAR &#9650;</button>
     </div>
+  </div>
+
+  <div class="unlock" id="unlockPanel">
+    <div class="unlock-text">
+      <span class="unlock-label">DESBLOQUEADO EN 500 PTS</span>
+      <span class="unlock-title">Resumen de Marketing Digital</span>
+    </div>
+    <a class="unlock-btn" id="unlockLink" href="Resumen_MarketingDigital.pdf" download="Resumen_MarketingDigital.pdf">DESCARGAR &darr;</a>
   </div>
 </div>
 
@@ -298,6 +372,26 @@
   } catch (e) { best = 0; }
   bestEl.textContent = pad(best);
 
+  var UNLOCK_SCORE = 500;
+  var UNLOCK_KEY = 'sin-senal-unlocked';
+  var unlockPanel = document.getElementById('unlockPanel');
+  var toast = document.getElementById('toast');
+  var toastTimer = null;
+  var unlocked = false;
+  try {
+    unlocked = localStorage.getItem(UNLOCK_KEY) === '1';
+  } catch (e) { unlocked = false; }
+  if (unlocked) unlockPanel.classList.add('visible');
+
+  function revealUnlock() {
+    unlocked = true;
+    try { localStorage.setItem(UNLOCK_KEY, '1'); } catch (e) {}
+    unlockPanel.classList.add('visible');
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toast.classList.remove('show'); }, 2600);
+  }
+
   function pad(n) {
     var s = String(Math.max(0, n | 0));
     while (s.length < 5) s = '0' + s;
@@ -322,7 +416,7 @@
 
   function reset() {
     score = 0;
-    scrollSpeed = 240;
+    scrollSpeed = 192;
     lift = 0;
     vy = 0;
     isJumping = false;
@@ -403,13 +497,17 @@
   function update(dt) {
     var dtS = dt / 1000;
 
-    scrollSpeed = Math.min(520, scrollSpeed + 3 * dtS);
+    scrollSpeed = Math.min(416, scrollSpeed + 2.4 * dtS);
     score += dtS * 12;
     scoreEl.textContent = pad(score);
     var scoreI = score | 0;
     var wasNight = nightMode;
     nightMode = (Math.floor(scoreI / 100) % 2) === 1;
     if (wasNight !== nightMode) {}
+
+    if (!unlocked && scoreI >= UNLOCK_SCORE) {
+      revealUnlock();
+    }
 
     var g = ducking ? FAST_GRAVITY : GRAVITY;
     if (isJumping) {
