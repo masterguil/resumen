@@ -1,0 +1,599 @@
+<title>Sin Señal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f6f6f4;
+    --ink: #141414;
+    --ink-soft: #6e6e6e;
+    --line: #d9d9d6;
+    --grid-dot: #e6e6e3;
+    --focus: #141414;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0b0b0a;
+      --surface: #131311;
+      --ink: #f1f1ee;
+      --ink-soft: #8c8c87;
+      --line: #2a2a27;
+      --grid-dot: #1c1c1a;
+      --focus: #f1f1ee;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #0b0b0a;
+    --surface: #131311;
+    --ink: #f1f1ee;
+    --ink-soft: #8c8c87;
+    --line: #2a2a27;
+    --grid-dot: #1c1c1a;
+    --focus: #f1f1ee;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 16px;
+    font-family: 'Space Mono', 'Consolas', monospace;
+  }
+
+  .stage {
+    width: 100%;
+    max-width: 620px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .masthead {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .brand h1 {
+    font-family: 'Press Start 2P', 'Courier New', monospace;
+    font-size: 20px;
+    line-height: 1.4;
+    margin: 0;
+    letter-spacing: 1px;
+    text-wrap: balance;
+  }
+
+  .brand p {
+    margin: 6px 0 0;
+    font-size: 11px;
+    color: var(--ink-soft);
+    letter-spacing: 0.3px;
+  }
+
+  .scorepanel {
+    text-align: right;
+    font-family: 'Press Start 2P', 'Courier New', monospace;
+    line-height: 1.9;
+    flex-shrink: 0;
+  }
+
+  .scorepanel .row {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    align-items: baseline;
+  }
+
+  .scorepanel .label {
+    font-size: 9px;
+    color: var(--ink-soft);
+  }
+
+  .scorepanel .value {
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .frame {
+    position: relative;
+    border: 2px solid var(--ink);
+    background:
+      radial-gradient(var(--grid-dot) 1px, transparent 1px) 0 0 / 22px 22px,
+      var(--surface);
+    aspect-ratio: 3 / 1;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+
+  .overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    text-align: center;
+    background: color-mix(in srgb, var(--surface) 88%, transparent);
+    padding: 16px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 120ms linear;
+  }
+
+  .overlay.visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .overlay .headline {
+    font-family: 'Press Start 2P', 'Courier New', monospace;
+    font-size: 16px;
+    letter-spacing: 1px;
+  }
+
+  .overlay .sub {
+    font-size: 11px;
+    color: var(--ink-soft);
+  }
+
+  .overlay .sub strong {
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .prompt {
+    font-size: 10.5px;
+    letter-spacing: 0.5px;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .prompt.blink { animation: blink 1.1s steps(1) infinite; }
+  }
+
+  @keyframes blink {
+    50% { opacity: 0.25; }
+  }
+
+  .horizon {
+    height: 1px;
+    background-image: repeating-linear-gradient(to right, var(--ink-soft) 0 6px, transparent 6px 12px);
+    opacity: 0.5;
+  }
+
+  .footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .legend {
+    font-size: 10.5px;
+    color: var(--ink-soft);
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .legend kbd {
+    font-family: 'Space Mono', monospace;
+    border: 1px solid var(--line);
+    border-bottom-width: 2px;
+    border-radius: 3px;
+    padding: 1px 5px;
+    font-size: 10px;
+    color: var(--ink);
+  }
+
+  .controls {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .controls button {
+    font-family: 'Space Mono', monospace;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-bottom-width: 2px;
+    color: var(--ink);
+    cursor: pointer;
+    padding: 10px 14px;
+    touch-action: manipulation;
+    user-select: none;
+  }
+
+  .controls button:active,
+  .controls button.pressed { background: var(--ink); color: var(--bg); }
+  .controls button:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+</style>
+
+<div class="stage">
+  <div class="masthead">
+    <div class="brand">
+      <h1>SIN SEÑAL</h1>
+      <p>otra forma de perder el tiempo sin internet</p>
+    </div>
+    <div class="scorepanel">
+      <div class="row"><span class="label">RECORD</span><span class="value" id="best">00000</span></div>
+      <div class="row"><span class="label">PUNTOS</span><span class="value" id="score">00000</span></div>
+    </div>
+  </div>
+
+  <div class="frame" id="frame">
+    <canvas id="board" role="img" aria-label="Tablero del juego: una serpiente corredora esquivando obstáculos"></canvas>
+    <div class="overlay visible" id="overlayStart">
+      <div class="headline">SIN SEÑAL</div>
+      <div class="sub">saltá o agachate para esquivar</div>
+      <div class="prompt blink">PRESIONÁ ESPACIO PARA EMPEZAR</div>
+    </div>
+    <div class="overlay" id="overlayOver">
+      <div class="headline">GAME OVER</div>
+      <div class="sub">puntos: <strong id="finalScore">0</strong></div>
+      <div class="prompt blink">PRESIONÁ ESPACIO PARA REINTENTAR</div>
+    </div>
+  </div>
+
+  <div class="horizon"></div>
+
+  <div class="footer">
+    <p class="legend">
+      <kbd>espacio</kbd> / <kbd>&uarr;</kbd> saltar &nbsp;·&nbsp; mantené <kbd>&darr;</kbd> para agachar
+    </p>
+    <div class="controls">
+      <button id="btnDuck" data-action="duck" aria-label="Agachar">AGACHAR &#9660;</button>
+      <button id="btnJump" data-action="jump" aria-label="Saltar">SALTAR &#9650;</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var W = 600, H = 200;
+  var canvas = document.getElementById('board');
+  var ctx = canvas.getContext('2d');
+  var dpr = Math.max(1, window.devicePixelRatio || 1);
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  var root = document.documentElement;
+  function cssVar(name) {
+    return getComputedStyle(root).getPropertyValue(name).trim();
+  }
+
+  var scoreEl = document.getElementById('score');
+  var bestEl = document.getElementById('best');
+  var finalScoreEl = document.getElementById('finalScore');
+  var overlayStart = document.getElementById('overlayStart');
+  var overlayOver = document.getElementById('overlayOver');
+
+  var STORAGE_KEY = 'sin-senal-runner-best';
+  var best = 0;
+  try {
+    best = parseInt(localStorage.getItem(STORAGE_KEY), 10) || 0;
+  } catch (e) { best = 0; }
+  bestEl.textContent = pad(best);
+
+  function pad(n) {
+    var s = String(Math.max(0, n | 0));
+    while (s.length < 5) s = '0' + s;
+    return s;
+  }
+
+  var STATE_IDLE = 'idle', STATE_PLAYING = 'playing', STATE_OVER = 'over';
+  var state = STATE_IDLE;
+
+  var GROUND_Y = H - 34;
+  var SNAKE_X = 64;
+  var STAND_H = 34;
+  var DUCK_H = 16;
+  var SEG_COUNT = 7;
+  var SEG_SPACING = 8;
+  var GRAVITY = 2500;
+  var FAST_GRAVITY = 6200;
+  var JUMP_VEL = 760;
+
+  var score, best_display, scrollSpeed, lift, vy, isJumping, ducking, nightMode;
+  var obstacles, spawnTimer, nextSpawnIn, phase, groundScroll, clouds, lastTime;
+
+  function reset() {
+    score = 0;
+    scrollSpeed = 240;
+    lift = 0;
+    vy = 0;
+    isJumping = false;
+    ducking = false;
+    nightMode = false;
+    obstacles = [];
+    spawnTimer = 0;
+    nextSpawnIn = 900;
+    phase = 0;
+    groundScroll = 0;
+    lastTime = 0;
+    clouds = [
+      { x: W * 0.3, y: 36, w: 22 },
+      { x: W * 0.65, y: 58, w: 16 },
+      { x: W * 1.0, y: 30, w: 26 }
+    ];
+    scoreEl.textContent = pad(0);
+  }
+
+  function currentHeight() {
+    return (ducking && !isJumping) ? DUCK_H : STAND_H;
+  }
+
+  function snakeBox() {
+    var h = currentHeight();
+    var bottom = GROUND_Y - lift;
+    return { left: SNAKE_X, right: SNAKE_X + SEG_COUNT * SEG_SPACING + 6, top: bottom - h, bottom: bottom };
+  }
+
+  function startGame() {
+    reset();
+    state = STATE_PLAYING;
+    overlayStart.classList.remove('visible');
+    overlayOver.classList.remove('visible');
+  }
+
+  function endGame() {
+    state = STATE_OVER;
+    var finalScore = score | 0;
+    if (finalScore > best) {
+      best = finalScore;
+      bestEl.textContent = pad(best);
+      try { localStorage.setItem(STORAGE_KEY, String(best)); } catch (e) {}
+    }
+    finalScoreEl.textContent = pad(finalScore);
+    overlayOver.classList.add('visible');
+  }
+
+  function doJump() {
+    if (state !== STATE_PLAYING) return;
+    if (isJumping) return;
+    isJumping = true;
+    ducking = false;
+    vy = JUMP_VEL;
+  }
+
+  function setDucking(v) {
+    ducking = v;
+  }
+
+  function spawnObstacle() {
+    var isBird = score > 15 && Math.random() < 0.38;
+    if (isBird) {
+      obstacles.push({
+        type: 'bird', x: W + 20, w: 26,
+        top: GROUND_Y - 44, bottom: GROUND_Y - 30
+      });
+    } else {
+      var h = 20 + ((Math.random() * 20) | 0);
+      var w = 10 + ((Math.random() * 10) | 0);
+      obstacles.push({
+        type: 'cactus', x: W + 20, w: w,
+        top: GROUND_Y - h, bottom: GROUND_Y
+      });
+    }
+  }
+
+  function update(dt) {
+    var dtS = dt / 1000;
+
+    scrollSpeed = Math.min(520, scrollSpeed + 3 * dtS);
+    score += dtS * 12;
+    scoreEl.textContent = pad(score);
+    var scoreI = score | 0;
+    var wasNight = nightMode;
+    nightMode = (Math.floor(scoreI / 100) % 2) === 1;
+    if (wasNight !== nightMode) {}
+
+    var g = ducking ? FAST_GRAVITY : GRAVITY;
+    if (isJumping) {
+      lift += vy * dtS;
+      vy -= g * dtS;
+      if (lift <= 0) { lift = 0; vy = 0; isJumping = false; }
+    }
+
+    phase += dtS * (ducking ? 14 : 9);
+    groundScroll = (groundScroll + scrollSpeed * dtS) % 16;
+    for (var c = 0; c < clouds.length; c++) {
+      clouds[c].x -= scrollSpeed * 0.25 * dtS;
+      if (clouds[c].x < -30) clouds[c].x = W + 20 + Math.random() * 40;
+    }
+
+    spawnTimer += dt;
+    if (spawnTimer >= nextSpawnIn) {
+      spawnTimer = 0;
+      nextSpawnIn = 750 + Math.random() * 650 - Math.min(250, scrollSpeed * 0.6);
+      nextSpawnIn = Math.max(420, nextSpawnIn);
+      spawnObstacle();
+    }
+
+    var box = snakeBox();
+    for (var i = obstacles.length - 1; i >= 0; i--) {
+      var o = obstacles[i];
+      o.x -= scrollSpeed * dtS;
+      if (o.x + o.w < -10) { obstacles.splice(i, 1); continue; }
+      var oBox = { left: o.x, right: o.x + o.w, top: o.top, bottom: o.bottom };
+      if (box.left < oBox.right && box.right > oBox.left && box.top < oBox.bottom && box.bottom > oBox.top) {
+        endGame();
+        return;
+      }
+    }
+  }
+
+  function draw() {
+    var bg = nightMode ? cssVar('--ink') : cssVar('--surface');
+    var ink = nightMode ? cssVar('--surface') : cssVar('--ink');
+
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.fillStyle = ink;
+    ctx.globalAlpha = 0.5;
+    for (var c = 0; c < clouds.length; c++) {
+      var cl = clouds[c];
+      ctx.fillRect(cl.x, cl.y, cl.w, 3);
+      ctx.fillRect(cl.x + 4, cl.y - 3, cl.w - 10, 3);
+    }
+    ctx.globalAlpha = 1;
+
+    ctx.strokeStyle = ink;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, GROUND_Y + 1);
+    ctx.lineTo(W, GROUND_Y + 1);
+    ctx.stroke();
+
+    ctx.fillStyle = ink;
+    for (var gx = -groundScroll; gx < W; gx += 16) {
+      ctx.fillRect(gx, GROUND_Y + 5, 7, 2);
+    }
+
+    ctx.fillStyle = ink;
+    for (var i = 0; i < obstacles.length; i++) {
+      var o = obstacles[i];
+      if (o.type === 'cactus') {
+        var segW = (o.w - 2) / 2;
+        ctx.fillRect(o.x, o.top, segW, o.bottom - o.top);
+        ctx.fillRect(o.x + segW + 2, o.top + 6, segW, o.bottom - o.top - 6);
+      } else {
+        var midY = (o.top + o.bottom) / 2;
+        ctx.fillRect(o.x, o.top + 6, 6, 5);
+        ctx.fillRect(o.x + 8, midY - 2, 8, 5);
+        ctx.fillRect(o.x + o.w - 6, o.top + 6, 6, 5);
+      }
+    }
+
+    var h = currentHeight();
+    var bottom = GROUND_Y - lift;
+    var top = bottom - h;
+    var amp = (ducking ? 0.18 : 0.34) * h;
+    var midY = top + h / 2;
+
+    ctx.fillStyle = ink;
+    var tailCount = SEG_COUNT - 1;
+    for (var s = 0; s < tailCount; s++) {
+      var sx = SNAKE_X + s * SEG_SPACING;
+      var sy = midY + Math.sin(phase - s * 0.85) * amp;
+      var size = 3 + (5 * s) / (tailCount - 1);
+      ctx.fillRect(sx, sy - size / 2, size, size);
+    }
+
+    var headX = SNAKE_X + tailCount * SEG_SPACING;
+    var headY = midY + Math.sin(phase) * amp * 0.3;
+    var headLen = 13;
+    var headHalf = h * 0.32;
+
+    ctx.beginPath();
+    ctx.moveTo(headX, headY - headHalf);
+    ctx.lineTo(headX, headY + headHalf);
+    ctx.lineTo(headX + headLen, headY);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = bg;
+    ctx.fillRect(headX + headLen * 0.3, headY - headHalf * 0.55, 2, 2);
+
+    if (Math.sin(phase * 2.2) > 0.55) {
+      ctx.strokeStyle = ink;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(headX + headLen, headY);
+      ctx.lineTo(headX + headLen + 6, headY - 3);
+      ctx.moveTo(headX + headLen, headY);
+      ctx.lineTo(headX + headLen + 6, headY + 3);
+      ctx.stroke();
+    }
+  }
+
+  function loop(ts) {
+    if (state === STATE_PLAYING) {
+      if (!lastTime) lastTime = ts;
+      var dt = Math.min(48, ts - lastTime);
+      lastTime = ts;
+      update(dt);
+    } else {
+      lastTime = 0;
+    }
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  reset();
+  draw();
+  requestAnimationFrame(loop);
+
+  function handleAction() {
+    if (state === STATE_IDLE || state === STATE_OVER) startGame();
+    else doJump();
+  }
+
+  window.addEventListener('keydown', function (e) {
+    if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') {
+      e.preventDefault();
+      if (state === STATE_IDLE || state === STATE_OVER) startGame();
+      else doJump();
+      return;
+    }
+    if (e.code === 'ArrowDown' || e.code === 'KeyS') {
+      e.preventDefault();
+      setDucking(true);
+    }
+  }, { passive: false });
+
+  window.addEventListener('keyup', function (e) {
+    if (e.code === 'ArrowDown' || e.code === 'KeyS') setDucking(false);
+  });
+
+  var btnJump = document.getElementById('btnJump');
+  var btnDuck = document.getElementById('btnDuck');
+
+  btnJump.addEventListener('click', function () {
+    if (state === STATE_IDLE || state === STATE_OVER) startGame();
+    else doJump();
+  });
+
+  btnDuck.addEventListener('pointerdown', function (e) {
+    e.preventDefault();
+    if (state === STATE_IDLE || state === STATE_OVER) { startGame(); return; }
+    btnDuck.classList.add('pressed');
+    setDucking(true);
+  });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (evt) {
+    btnDuck.addEventListener(evt, function () {
+      btnDuck.classList.remove('pressed');
+      setDucking(false);
+    });
+  });
+
+  document.getElementById('frame').addEventListener('click', function (e) {
+    if (e.target.closest('.controls')) return;
+    handleAction();
+  });
+})();
+</script>
