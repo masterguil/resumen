@@ -424,7 +424,7 @@
     nightMode = false;
     obstacles = [];
     spawnTimer = 0;
-    nextSpawnIn = 900;
+    nextSpawnIn = 1050;
     phase = 0;
     groundScroll = 0;
     lastTime = 0;
@@ -526,8 +526,8 @@
     spawnTimer += dt;
     if (spawnTimer >= nextSpawnIn) {
       spawnTimer = 0;
-      nextSpawnIn = 750 + Math.random() * 650 - Math.min(250, scrollSpeed * 0.6);
-      nextSpawnIn = Math.max(420, nextSpawnIn);
+      nextSpawnIn = 850 + Math.random() * 650 - Math.min(220, scrollSpeed * 0.5);
+      nextSpawnIn = Math.max(480, nextSpawnIn);
       spawnObstacle();
     }
 
